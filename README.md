@@ -10,12 +10,20 @@ The first thing you'll see is that logging is set to DEBUG mode by default (to s
 Game instructions:
 --------------------
 To check a square, enter a letter followed by a number. (e.g. a1, B2, c3, etc.)
+
 To flag, Type '-f' followed by the square you want to flag. (e.g. '-f a1', '-f B2', '-f c3', etc.)
+
 Flags can be removed by flagging the same square again.
+
 You can also AUTO search a 3x3 area around a revealed cell, skipping the flagged squares. 
+
 That works exactly the same way as it would in normal minesweeper. Simply enter any revealed cell. 
+
 Type 'reveal' to toggle REVEAL mode. This will reveal the mine locations (For testing purposes).
+
 Type 'reset', 'restart', 'exit', or 'quit' at any point to to reset the game.
+
 Type 'debug' to toggle debug logging on or off.
+
 Type 'help' at any point to repeat this message.
 
