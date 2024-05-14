@@ -39,7 +39,7 @@ def minesweeper():
         It has a width, height, and number of mines. It populates the grid matrix with cells.  \n
         The place_mines method randomly places mines on the grid. The display method prints the grid. """
 
-        def __init__(self, width, height, num_mines, difficulty):
+        def __init__(self, width, height, num_mines, difficulty):       ## The number of mines and the difficulty are chosen by the player.
             self.width = width
             self.height = height
             self.num_mines = num_mines
@@ -82,9 +82,13 @@ def minesweeper():
         def create_move_dict(self):
             """ This is a method that creates a dictionary of moves. It will use the player's input as the key and the coordinates as the value. """
             self.move_dict = {}                         ## start with blank dictionary
-            for y in range(self.height):                ## then for width and height of the grid:
-                for x in range(self.width):
-                    self.move_dict[ascii_string[x] + str(y + 1)] = (x, y)  ## ascii_string at x index, column at y index
+            try:
+                for y in range(self.height):            ## then for width and height of the grid:
+                    for x in range(self.width):
+                        self.move_dict[ascii_string[x] + str(y + 1)] = (x, y)  ## ascii_string at x index, column at y index
+            except IndexError:
+                logging.debug(f"\033[33m IndexError triggered. \033[0m")
+                logging.debug(self.move_dict)
             logging.debug(f"\033[33m Move dictionary created. \033[0m")
             logging.debug(self.move_dict)
             
@@ -93,7 +97,8 @@ def minesweeper():
             X and Y are the coordinates of the cell that was clicked.  \n
             First it makes a deque of the cell that was clicked. Then it iterates over the deque.  \n
             Only cells with no adjacent mines are added to the deque. If the clicked cell has adjacent mines, it is
-            immediately revealed and the process stops. """
+            immediately revealed and the process stops. Oh also it uses a deque, its NOT a recursive function!
+            I heard that deque is generally better than recursive functions for this kind of thing."""
 
             to_check = deque([(x, y)])             ## We start with a deque of the cell that was clicked
             first_cell = self.grid_matrix[y][x]    ## Get the cell that was clicked
@@ -107,14 +112,14 @@ def minesweeper():
                         new_x = x + dx             ## x is -1 means left, 0 means center, 1 means right
                         new_y = y + dy             ## y is -1 means up, 0 means center, 1 means down
                         if 0 <= new_x < self.width and 0 <= new_y < self.height:     ## if the new coordinates are within the grid,
-                            current_cell = self.grid_matrix[new_y][new_x]                   ## get the cell at the new coordinates.
+                            current_cell = self.grid_matrix[new_y][new_x]            ## get the cell at the new coordinates.
                             if not current_cell.is_revealed:                         ## if the cell is not revealed,  
                                 current_cell.is_revealed = True                      ## reveal the cell.
                                 if current_cell.adjacent_mines == 0:                 ## IF the cell is not adjacent to any mines,
                                     to_check.append((new_x, new_y))                  ## add it to the deque and repeat the process.
 
         def special_reveal(self, x, y):
-            """ This is a method that reveals all cells that are adjacent to the cell that was clicked,
+            """ This is a method that reveals all cells that are adjacent to the cell that was clicked (a 3x3 area),
             BUT it will skip any cells that are flagged. """
 
             starting_cell = self.grid_matrix[y][x] ## Get the cell that was clicked
@@ -146,25 +151,40 @@ def minesweeper():
                             current_cell = self.grid_matrix[new_y][new_x]                   ## get the cell at the new coordinates.
                             if not current_cell.is_revealed and not current_cell.is_flagged:  ## if the cell is not revealed and not flagged,
                                 if current_cell.is_mine:                                ## if the cell is a mine,
-                                    #current_cell.is_revealed = True                     ## reveal the cell.
+                                    #current_cell.is_revealed = True                    ## reveal the cell.
                                     return "HIT"                                        ## return "HIT" to end the game.
                                 else:
                                     current_cell.is_revealed = True
                                     if current_cell.adjacent_mines == 0:
-                                        self.cluster_reveal(new_x, new_y)               ## if the cell is not adjacent to any mines, reveal the cluster.    
+                                        self.cluster_reveal(new_x, new_y)               ## if the cell is not adjacent to any mines, reveal the cluster.
+
+        def int_generator(self):
+            """ This is a generator that yields integers from 0 to UNLIMITED!! Its for the unlimited mode. """
+            i = 1
+            while True:
+                yield i
+                i += 1       
     
         def display(self, mines_remaining):
             """ This is a method that controls the display of the grid. It prints the grid to the console and controls 
             how the cells are displayed based on their state. """
-            ## Undernote: It looks janky because of all the ASCII formatting.
+            ## Undernote: It looks janky because of all the ASCII formatting.               
 
             logging.debug(f"\033[33m Display method initiated. \033[0m")
             logging.debug(f"GRID LENGTH: {len(self.grid_matrix)} GRID WIDTH: {len(self.grid_matrix[0])}")
             print()                  
             row_len = len(self.grid_matrix[0])                  ## Get the length of the first row of the grid
-            print("    ", end="")                               
-            for letter in ascii_string[:row_len]:               ## Print the letters of the alphabet up to the length of the first row
-                print(" ", letter, end="")
+            logging.debug(f"\033[33m Row length: {row_len} \033[0m")
+            logging.debug(f"\033[33m self.difficulty: {self.difficulty} \033[0m")
+            print("    ", end="")
+            if self.difficulty == "UNLIMITED":
+                gen = self.int_generator()
+                for _ in range(row_len):                        ## If the difficulty is unlimited, print numbers instead of letters
+                    print(" ", next(gen), end="")               ## Print the numbers 1 to UNLIMITED
+            else:                                               ## If the difficulty is custom, print the width and height
+                logging.debug(f"\033[33m printing ascii string... \033[0m")                               
+                for letter in ascii_string[:row_len]:           ## Print the letters of the alphabet up to the length of the first row
+                    print(" ", letter, end="")
             print("\n    ", "---" * row_len)                    ## border bar
             row_count = 1                                       ## used to number the rows
             for row in self.grid_matrix:
@@ -236,6 +256,7 @@ def minesweeper():
             "H":  [15, 15, 25, "HARD"],               ## If you add or remove difficulty presets they will automatically appear in the game menu
             "W":  [20, 10, 25, "WIDE"],                                               
             "C":  [0, 0, 0, "CUSTOM"],                ## The formatting has to match so it can grab the display name
+            "U":  [0, 0, 0, "UNLIMITED"]              ## This is a special mode for hardcore testing!! WILL MAKE GAME CRASH!!!
         } 
 
         def __init__(self, previous_times):
@@ -296,20 +317,18 @@ def minesweeper():
                     print(f"   |  {option}")
                 if option == "C":
                     print(f"C: CUSTOM:  Choose your own settings.  enter:  C")
+                if option == "U":
+                    print(f"U: UNLIMITED:  For hardcore testing. Use at your own risk.")
 
             while True:
                 logging.debug(f"\033[33m Difficulty input loop initiated. \033[0m")
                 user_input = input("Enter difficulty level: ").upper()
 
                 if user_input in self.difficulty_dict:                              ## If the user input is in the dictionary,
-                    self.difficulty_setting = self.difficulty_dict[user_input][3]   ## set the difficulty setting to the display name
-                    ## If its in the dictionary then proceed with setup:             
-                    if self.difficulty_setting != "CUSTOM":                         ## If the difficulty is not custom,
-                        self.width = self.difficulty_dict[user_input][0]            ## index 0 is width
-                        self.height = self.difficulty_dict[user_input][1]           ## index 1 is height
-                        self.num_mines = self.difficulty_dict[user_input][2]        ## index 2 is number of mines
-                        return "NOQUIT"                                             ## return "NOQUIT" to continue the game
-                    else:                                                           ## If the difficulty is custom,                
+                    self.difficulty_setting = self.difficulty_dict[user_input][3]   ## set the difficulty setting to its name (index 3)
+                    ## If its in the dictionary then proceed with setup:                                                         ## return "NOQUIT" to continue the game
+                    if self.difficulty_setting == "CUSTOM":
+                        print("You have chosen CUSTOM")                             ## If the difficulty is custom,                
                         ## CUSTOM DIFFICULTY                                     
                         try:
                             self.width = int(input("Enter width (MAX 26): "))       ## 26 letters in the alphabet
@@ -323,14 +342,44 @@ def minesweeper():
                             self.num_mines = int(input("Enter number of mines: "))
                             if self.num_mines > self.width * self.height or self.num_mines < 1:
                                 print("Invalid input. Number of mines cannot exceed the number of cells or be less than 1.")
+                                self.mines_remaining = self.num_mines
                                 continue
                             return "NOQUIT"                        
                         except ValueError:
                             logging.debug(f"\033[33m ValueError triggered \033[0m")
                             print("Invalid input. Please enter a valid integer.")
                             continue
+                    elif self.difficulty_setting == "UNLIMITED":
+                        ## I have tested this WORKING at 1000 x 1000 grid with 10 mines! Whether it will go beyond that, who knows.
+                        print("You have chosen the UNLIMITED difficulty. Note this is not intended for playing.")
+                        print("The move dictionary will still work up to 26 columns (width). But passed that it will stop working.")                      
+                        try:
+                            self.width = int(input("Enter width (NO LIMIT): "))       ## We are playing with fire
+                            if self.width < 1:                                        ## width cannot be less than 1
+                                print("Invalid input. Width cannot be less than 1")
+                                continue
+                            self.height = int(input("Enter height: (NO LIMIT): "))
+                            if self.height < 1:                         
+                                print("Invalid input. Height cannot be less than 1")
+                                continue
+                            self.num_mines = int(input("Enter number of mines: "))
+                            if self.num_mines > self.width * self.height or self.num_mines < 1:
+                                print("Invalid input. Number of mines cannot exceed the number of cells or be less than 1.")
+                                self.mines_remaining = self.num_mines
+                                continue
+                            return "NOQUIT"                        
+                        except ValueError:
+                            logging.debug(f"\033[33m ValueError triggered \033[0m")
+                            print("Invalid input. Please enter a valid integer.")
+                            continue
+                    else:                                         ## If its in the dictionary but not custom or unlimited, then its one of the presets.
+                        self.width = self.difficulty_dict[user_input][0]            ## index 0 is width
+                        self.height = self.difficulty_dict[user_input][1]           ## index 1 is height
+                        self.num_mines = self.difficulty_dict[user_input][2]        ## index 2 is number of mines
+                        self.mines_remaining = self.num_mines                    
+                        return "NOQUIT"                  
 
-                ## If the user input is not in the dictionary, then its one of the following:
+                ## If the user input is not in the difficulty dictionary, then its one of the following:
                 elif user_input == "HELP":
                     self.minesweeper_help()
                     continue
@@ -369,7 +418,6 @@ def minesweeper():
                         x, y = move_dict[flag_move]                      ## unpacks the tuple (x, y) from the dictionary at that key
                         cell = active_grid.grid_matrix[y][x]             ## create link to that cell object in the grid
                         logging.debug(f"\033[33m Flag move found    x: {x} | y: {y} \033[0m")
-                        logging.debug(f"\033[33m Cell object: {cell} \033[0m")
                         logging.debug(f"\033[33m Cell is mine: {cell.is_mine} \033[0m")
                         logging.debug(f"\033[33m Cell is revealed: {cell.is_revealed} \033[0m")
                         logging.debug(f"\033[33m Cell is flagged: {cell.is_flagged} \033[0m")
@@ -395,9 +443,8 @@ def minesweeper():
                 ## NORMAL MODE SECTION
                 elif user_input in move_dict:                                   ## If the user input is in the move dictionary,
                     x, y = move_dict[user_input]                                ## unpacks the tuple (x, y) from the dictionary at that key
-                    logging.debug(f"\033[33m Move found    x: {x} | y: {y} \033[0m")
                     cell = active_grid.grid_matrix[y][x]                        ## create link to the cell object in the grid
-                    logging.debug(f"\033[33m Cell object: {cell} \033[0m")
+                    logging.debug(f"\033[33m Move found    x: {x} | y: {y} \033[0m")
                     logging.debug(f"\033[33m Cell is mine: {cell.is_mine} \033[0m")
                     logging.debug(f"\033[33m Cell is revealed: {cell.is_revealed} \033[0m")
                     logging.debug(f"\033[33m Cell is flagged: {cell.is_flagged} \033[0m")
@@ -464,8 +511,8 @@ def minesweeper():
 
             quit_request = self.game_manager.difficulty_input()                       ## Initializes the difficulty settings
             if quit_request == "QUIT":                                                ## If the player quits during the difficulty input,
-                return "QUIT"                                                          ## exit the game loop
-            width = self.game_manager.width                             ## Unpacks the width, height, and number of mines
+                return "QUIT"                                                         ## exit the game loop
+            width = self.game_manager.width                                           ## Unpacks the width, height, and number of mines
             height = self.game_manager.height
             num_mines = self.game_manager.num_mines
             difficulty = self.game_manager.difficulty_setting
@@ -473,7 +520,6 @@ def minesweeper():
             logging.debug(f"\033[33m Width: {width} | Height: {height} | Num Mines: {num_mines} | Difficulty: {difficulty} \033[0m")
         
             self.active_grid = Grid_Class(width, height, num_mines, difficulty)    ## Creates the grid object with the difficulty settings
-            self.game_manager.mines_remaining = num_mines               ## set the number of mines remaining to the number of mines chosen
 
             logging.debug(f"\033[33m Grid created. Active grid object: \033[0m")
             logging.debug(self.active_grid)
@@ -493,7 +539,7 @@ def minesweeper():
 
             print(f"\n Mines remaining: {self.game_manager.mines_remaining} | Time elapsed: {self.timer} seconds")
             logging.debug(f"Mines remaining: {self.game_manager.mines_remaining} | Time elapsed: {self.timer} seconds")
-            self.active_grid.display(self.game_manager.mines_remaining)  ## Display the grid
+            self.active_grid.display(self.game_manager.mines_remaining)               ## Display the grid
                 
         ## THIS IS THE GAME LOOP ##
         def game_loop(self):
@@ -542,20 +588,20 @@ def minesweeper():
             
             game_manager = Game_Manager_Class(previous_times)               ## pass the previous times into the game manager to display them                              
             main_game = Main_Game_Class(game_manager)                       ## pass game manager into the main game class
-            quit_request = main_game.setup_game()                           ## checks for quit request in the menu
-            if quit_request == "QUIT":
+            quit_request = main_game.setup_game()                           ## Runs the game setup
+            if quit_request == "QUIT":                                      ## checks for quit request in the menu
                 break         
             main_game.run_counter_thread()                                  ## starts the timer thread
-            time, difficulty = main_game.game_loop()
+            time, difficulty = main_game.game_loop()                        ## Runs the main game loop
             if time is not None and difficulty is not None:                 ## If the game is won, add the time and difficulty to the list
                 previous_times.append((time, difficulty)) 
-            if game_manager.play_again():
+            if game_manager.play_again():                                   ## Runs the play again function
                 continue                                   
             else:
                 break
         print("Goodbye!")
 
-    external_loop(logger_level_string)                    ## Last line at the bottom actually runs the external loop function, which contains the initializations.
+    external_loop(logger_level_string)                                      ## Last line at the bottom runs the external loop function
 
 if __name__ == "__main__":
     minesweeper()
