@@ -200,7 +200,6 @@ def minesweeper():
                 for _ in range(row_len):                        ## If the difficulty is unlimited, print numbers instead of letters
                     print(" ", next(gen), end="")               ## Print the numbers 1 to UNLIMITED
             else:                                               ## If the difficulty is custom, print the width and height
-                logging.debug(f"\033[33m printing ascii string... \033[0m")                               
                 for letter in ascii_string[:row_len]:           ## Print the letters of the alphabet up to the length of the first row
                     print(" ", letter, end="")
             print("\n    ", "---" * row_len)                    ## border bar
