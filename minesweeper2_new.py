@@ -24,6 +24,17 @@ def minesweeper():
     logging.basicConfig(level=logger_level_string, format="%(asctime)s - %(levelname)s - %(message)s")
 
     ################################################################
+
+    class Size_Getter_Class():
+
+        @staticmethod
+        def get_size(obj):
+            """Get the size of object in kilobytes and megabytes."""
+            size_bytes = sys.getsizeof(obj)
+            size_kb = size_bytes / 1024
+            size_mb = size_kb / 1024
+            return size_bytes, size_kb, size_mb
+        
     class Cell_Class:
         """ The cell class takes care of the state of each cell in the grid. Each cell has a boolean value for whether it is a mine,
         whether it is revealed, and whether it is flagged. It also has an integer value for the number of adjacent mines. """
@@ -49,6 +60,13 @@ def minesweeper():
             self.place_mines()              ## Call the place_mines method to place the mines on the grid
             self.surrounding_counter()      ## Call the surrounding_counter method to count the number of adjacent mines for each cell
             self.create_move_dict()         ## Call the create_move_dict method to create a dictionary of moves
+            self.run_size_getter()          ## Call the run_size_getter method to get the size of the grid object in KB
+
+        def run_size_getter(self):
+            """ This is a method that runs the size getter class to get the size of the grid object. """
+            size_bytes, size_kb, size_mb = Size_Getter_Class.get_size(self.grid_matrix)
+            self.size_bytes = size_bytes
+            logging.debug(f"\033[33m Grid size in bytes: {size_bytes}, KB: {size_kb}, MB: {size_mb} \033[0m")
 
         def place_mines(self):
             """ This is a method that places mines on the grid. It does this by creating a list of all the positions on the grid,
@@ -310,7 +328,7 @@ def minesweeper():
                 logging.debug(f"\033[33m {item} : {self.difficulty_dict[item]} \033[0m")
                                     
             for option in self.difficulty_dict:                                     ## This section is here so that it will dynamically update
-                if option != "C":                                                   ## the menu if you change or even add difficulty levels.
+                if option != "C" and option != "U":                                 ## the difficulty presets in the game menu if you change them.
                     print(f"{option}: {self.difficulty_dict[option][3]}: ", end="")                             ## index 3 is display name
                     print(f"{self.difficulty_dict[option][0]} by {self.difficulty_dict[option][1]} ", end="")   ## 0 is width, 1 is height
                     print(f"with {self.difficulty_dict[option][2]} mines.", end="")                             ## index 2 is number of mines
@@ -546,7 +564,8 @@ def minesweeper():
                         
             while True:
                 self.display_game_screen()                                            ## Display the game screen
-                try:                                                                  ## game_input takes the grid and the move dictionary as arguments
+                try:
+                    logging.debug(f"Active grid size in bytes: {self.active_grid.size_bytes}")
                     hit_mine, quit_request = self.game_manager.game_imput(self.active_grid, self.active_grid.move_dict)
                     logging.debug(f"\033[33m Hit Mine: {hit_mine} | Quit Request: {quit_request} \033[0m")
                     if quit_request == "QUIT":                                        ## if there is a quit request,
